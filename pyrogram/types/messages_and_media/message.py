@@ -988,7 +988,8 @@ class Message(Object, Update):
         duration: int = 0,
         width: int = 0,
         height: int = 0,
-        thumb: str = None,
+        thumb: Union[str, BinaryIO] = None,
+        file_name: str = None,
         disable_notification: bool = None,
         reply_markup: Union[
             "types.InlineKeyboardMarkup",
@@ -1047,11 +1048,15 @@ class Message(Object, Update):
             height (``int``, *optional*):
                 Animation height.
 
-            thumb (``str``, *optional*):
+            thumb (``str`` | ``BinaryIO``, *optional*):
                 Thumbnail of the animation file sent.
                 The thumbnail should be in JPEG format and less than 200 KB in size.
                 A thumbnail's width and height should not exceed 320 pixels.
                 Thumbnails can't be reused and can be only uploaded as a new file.
+
+            file_name (``str``, *optional*):
+                File name of the animation sent.
+                Defaults to file's path basename.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -1110,6 +1115,7 @@ class Message(Object, Update):
             width=width,
             height=height,
             thumb=thumb,
+            file_name=file_name,
             disable_notification=disable_notification,
             reply_to_message_id=reply_to_message_id,
             reply_markup=reply_markup,
@@ -1127,7 +1133,8 @@ class Message(Object, Update):
         duration: int = 0,
         performer: str = None,
         title: str = None,
-        thumb: str = None,
+        thumb: Union[str, BinaryIO] = None,
+        file_name: str = None,
         disable_notification: bool = None,
         reply_to_message_id: int = None,
         reply_markup: Union[
@@ -1186,11 +1193,15 @@ class Message(Object, Update):
             title (``str``, *optional*):
                 Track name.
 
-            thumb (``str``, *optional*):
+            thumb (``str`` | ``BinaryIO``, *optional*):
                 Thumbnail of the music file album cover.
                 The thumbnail should be in JPEG format and less than 200 KB in size.
                 A thumbnail's width and height should not exceed 320 pixels.
                 Thumbnails can't be reused and can be only uploaded as a new file.
+
+            file_name (``str``, *optional*):
+                File name of the audio sent.
+                Defaults to file's path basename.
 
             disable_notification (``bool``, *optional*):
                 Sends the message silently.
@@ -1249,6 +1260,7 @@ class Message(Object, Update):
             performer=performer,
             title=title,
             thumb=thumb,
+            file_name=file_name,
             disable_notification=disable_notification,
             reply_to_message_id=reply_to_message_id,
             reply_markup=reply_markup,
@@ -1468,7 +1480,7 @@ class Message(Object, Update):
         self,
         document: Union[str, BinaryIO],
         quote: bool = None,
-        thumb: str = None,
+        thumb: Union[str, BinaryIO] = None,
         caption: str = "",
         parse_mode: Optional["enums.ParseMode"] = None,
         caption_entities: List["types.MessageEntity"] = None,
@@ -1514,7 +1526,7 @@ class Message(Object, Update):
                 If *reply_to_message_id* is passed, this parameter will be ignored.
                 Defaults to ``True`` in group chats and ``False`` in private chats.
 
-            thumb (``str``, *optional*):
+            thumb (``str`` | ``BinaryIO``, *optional*):
                 Thumbnail of the file sent.
                 The thumbnail should be in JPEG format and less than 200 KB in size.
                 A thumbnail's width and height should not exceed 320 pixels.
@@ -1529,7 +1541,7 @@ class Message(Object, Update):
 
             caption_entities (List of :obj:`~pyrogram.types.MessageEntity`):
                 List of special entities that appear in the caption, which can be specified instead of *parse_mode*.
-            
+
             file_name (``str``, *optional*):
                 File name of the document sent.
                 Defaults to file's path basename.
@@ -1816,7 +1828,12 @@ class Message(Object, Update):
 
     async def reply_media_group(
         self,
-        media: List[Union["types.InputMediaPhoto", "types.InputMediaVideo"]],
+        media: List[Union[
+            "types.InputMediaPhoto",
+            "types.InputMediaVideo",
+            "types.InputMediaAudio",
+            "types.InputMediaDocument"
+        ]],
         quote: bool = None,
         disable_notification: bool = None,
         reply_to_message_id: int = None
@@ -2352,7 +2369,8 @@ class Message(Object, Update):
         duration: int = 0,
         width: int = 0,
         height: int = 0,
-        thumb: str = None,
+        thumb: Union[str, BinaryIO] = None,
+        file_name: str = None,
         supports_streaming: bool = True,
         disable_notification: bool = None,
         reply_to_message_id: int = None,
@@ -2417,11 +2435,15 @@ class Message(Object, Update):
             height (``int``, *optional*):
                 Video height.
 
-            thumb (``str``, *optional*):
+            thumb (``str`` | ``BinaryIO``, *optional*):
                 Thumbnail of the video sent.
                 The thumbnail should be in JPEG format and less than 200 KB in size.
                 A thumbnail's width and height should not exceed 320 pixels.
                 Thumbnails can't be reused and can be only uploaded as a new file.
+
+            file_name (``str``, *optional*):
+                File name of the video sent.
+                Defaults to file's path basename.
 
             supports_streaming (``bool``, *optional*):
                 Pass True, if the uploaded video is suitable for streaming.
@@ -2484,6 +2506,7 @@ class Message(Object, Update):
             width=width,
             height=height,
             thumb=thumb,
+            file_name=file_name,
             supports_streaming=supports_streaming,
             disable_notification=disable_notification,
             reply_to_message_id=reply_to_message_id,
@@ -2498,7 +2521,7 @@ class Message(Object, Update):
         quote: bool = None,
         duration: int = 0,
         length: int = 1,
-        thumb: str = None,
+        thumb: Union[str, BinaryIO] = None,
         disable_notification: bool = None,
         reply_to_message_id: int = None,
         reply_markup: Union[
@@ -2544,7 +2567,7 @@ class Message(Object, Update):
             length (``int``, *optional*):
                 Video width and height.
 
-            thumb (``str``, *optional*):
+            thumb (``str`` | ``BinaryIO``, *optional*):
                 Thumbnail of the video sent.
                 The thumbnail should be in JPEG format and less than 200 KB in size.
                 A thumbnail's width and height should not exceed 320 pixels.
