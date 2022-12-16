@@ -89,17 +89,9 @@ class GetChatPhotos:
                 else:
                     photos = extra
             else:
-                if current:
-                    photos = [current]
-                else:
-                    photos = []
-
-            current = 0
-
-            for photo in photos:
+                photos = [current] if current else []
+            for current, photo in enumerate(photos, start=1):
                 yield photo
-
-                current += 1
 
                 if current >= limit:
                     return

@@ -31,14 +31,10 @@ class Parser:
         self.markdown = Markdown(client)
 
     async def parse(self, text: str, mode: Optional[enums.ParseMode] = None):
-        text = str(text if text else "").strip()
+        text = str(text or "").strip()
 
         if mode is None:
-            if self.client:
-                mode = self.client.parse_mode
-            else:
-                mode = enums.ParseMode.DEFAULT
-
+            mode = self.client.parse_mode if self.client else enums.ParseMode.DEFAULT
         if mode == enums.ParseMode.DEFAULT:
             return await self.markdown.parse(text)
 

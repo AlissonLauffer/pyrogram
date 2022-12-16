@@ -69,39 +69,42 @@ class ChatPhoto(Object):
         peer_id: int,
         peer_access_hash: int
     ):
-        if not isinstance(chat_photo, (raw.types.UserProfilePhoto, raw.types.ChatPhoto)):
-            return None
-
-        return ChatPhoto(
-            small_file_id=FileId(
-                file_type=FileType.CHAT_PHOTO,
-                dc_id=chat_photo.dc_id,
-                media_id=chat_photo.photo_id,
-                access_hash=0,
-                volume_id=0,
-                thumbnail_source=ThumbnailSource.CHAT_PHOTO_SMALL,
-                local_id=0,
-                chat_id=peer_id,
-                chat_access_hash=peer_access_hash
-            ).encode(),
-            small_photo_unique_id=FileUniqueId(
-                file_unique_type=FileUniqueType.DOCUMENT,
-                media_id=chat_photo.photo_id
-            ).encode(),
-            big_file_id=FileId(
-                file_type=FileType.CHAT_PHOTO,
-                dc_id=chat_photo.dc_id,
-                media_id=chat_photo.photo_id,
-                access_hash=0,
-                volume_id=0,
-                thumbnail_source=ThumbnailSource.CHAT_PHOTO_BIG,
-                local_id=0,
-                chat_id=peer_id,
-                chat_access_hash=peer_access_hash
-            ).encode(),
-            big_photo_unique_id=FileUniqueId(
-                file_unique_type=FileUniqueType.DOCUMENT,
-                media_id=chat_photo.photo_id
-            ).encode(),
-            client=client
+        return (
+            ChatPhoto(
+                small_file_id=FileId(
+                    file_type=FileType.CHAT_PHOTO,
+                    dc_id=chat_photo.dc_id,
+                    media_id=chat_photo.photo_id,
+                    access_hash=0,
+                    volume_id=0,
+                    thumbnail_source=ThumbnailSource.CHAT_PHOTO_SMALL,
+                    local_id=0,
+                    chat_id=peer_id,
+                    chat_access_hash=peer_access_hash,
+                ).encode(),
+                small_photo_unique_id=FileUniqueId(
+                    file_unique_type=FileUniqueType.DOCUMENT,
+                    media_id=chat_photo.photo_id,
+                ).encode(),
+                big_file_id=FileId(
+                    file_type=FileType.CHAT_PHOTO,
+                    dc_id=chat_photo.dc_id,
+                    media_id=chat_photo.photo_id,
+                    access_hash=0,
+                    volume_id=0,
+                    thumbnail_source=ThumbnailSource.CHAT_PHOTO_BIG,
+                    local_id=0,
+                    chat_id=peer_id,
+                    chat_access_hash=peer_access_hash,
+                ).encode(),
+                big_photo_unique_id=FileUniqueId(
+                    file_unique_type=FileUniqueType.DOCUMENT,
+                    media_id=chat_photo.photo_id,
+                ).encode(),
+                client=client,
+            )
+            if isinstance(
+                chat_photo, (raw.types.UserProfilePhoto, raw.types.ChatPhoto)
+            )
+            else None
         )

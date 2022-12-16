@@ -86,7 +86,7 @@ class RPCError(Exception):
               is_signed=is_signed)
 
         value = re.search(r"_(\d+)", error_message)
-        value = value.group(1) if value is not None else value
+        value = value[1] if value is not None else value
 
         raise getattr(
             import_module("pyrogram.errors"),

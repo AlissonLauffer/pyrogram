@@ -60,13 +60,9 @@ class Connection:
                 self.protocol.close()
                 await asyncio.sleep(1)
             else:
-                log.info("Connected! {} DC{}{} - IPv{} - {}".format(
-                    "Test" if self.test_mode else "Production",
-                    self.dc_id,
-                    " (media)" if self.media else "",
-                    "6" if self.ipv6 else "4",
-                    self.mode.__name__,
-                ))
+                log.info(
+                    f'Connected! {"Test" if self.test_mode else "Production"} DC{self.dc_id}{" (media)" if self.media else ""} - IPv{"6" if self.ipv6 else "4"} - {self.mode.__name__}'
+                )
                 break
         else:
             log.warning("Connection failed! Trying again...")
@@ -80,7 +76,7 @@ class Connection:
         try:
             await self.protocol.send(data)
         except Exception as e:
-            raise OSError(e)
+            raise OSError(e) from e
 
     async def recv(self) -> Optional[bytes]:
         return await self.protocol.recv()

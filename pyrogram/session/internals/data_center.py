@@ -60,22 +60,18 @@ class DataCenter:
 
     def __new__(cls, dc_id: int, test_mode: bool, ipv6: bool, media: bool) -> Tuple[str, int]:
         if test_mode:
-            if ipv6:
-                ip = cls.TEST_IPV6[dc_id]
-            else:
-                ip = cls.TEST[dc_id]
-
+            ip = cls.TEST_IPV6[dc_id] if ipv6 else cls.TEST[dc_id]
             return ip, 80
         else:
             if ipv6:
-                if media:
-                    ip = cls.PROD_IPV6_MEDIA.get(dc_id, cls.PROD_IPV6[dc_id])
-                else:
-                    ip = cls.PROD_IPV6[dc_id]
+                ip = (
+                    cls.PROD_IPV6_MEDIA.get(dc_id, cls.PROD_IPV6[dc_id])
+                    if media
+                    else cls.PROD_IPV6[dc_id]
+                )
+            elif media:
+                ip = cls.PROD_MEDIA.get(dc_id, cls.PROD[dc_id])
             else:
-                if media:
-                    ip = cls.PROD_MEDIA.get(dc_id, cls.PROD[dc_id])
-                else:
-                    ip = cls.PROD[dc_id]
+                ip = cls.PROD[dc_id]
 
             return ip, 443

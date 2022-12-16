@@ -469,21 +469,24 @@ class Message(Object, Update):
         peer_id = utils.get_raw_peer_id(message.peer_id)
         user_id = from_id or peer_id
 
-        if isinstance(message.from_id, raw.types.PeerUser) and isinstance(message.peer_id, raw.types.PeerUser):
-            if from_id not in users or peer_id not in users:
-                try:
-                    r = await client.invoke(
-                        raw.functions.users.GetUsers(
-                            id=[
-                                await client.resolve_peer(from_id),
-                                await client.resolve_peer(peer_id)
-                            ]
-                        )
+        if (
+            isinstance(message.from_id, raw.types.PeerUser)
+            and isinstance(message.peer_id, raw.types.PeerUser)
+            and (from_id not in users or peer_id not in users)
+        ):
+            try:
+                r = await client.invoke(
+                    raw.functions.users.GetUsers(
+                        id=[
+                            await client.resolve_peer(from_id),
+                            await client.resolve_peer(peer_id)
+                        ]
                     )
-                except PeerIdInvalid:
-                    pass
-                else:
-                    users.update({i.id: i for i in r})
+                )
+            except PeerIdInvalid:
+                pass
+            else:
+                users.update({i.id: i for i in r})
 
         if isinstance(message, raw.types.MessageService):
             action = message.action
@@ -553,7 +556,13 @@ class Message(Object, Update):
                 service_type = enums.MessageServiceType.WEB_APP_DATA
 
             from_user = types.User._parse(client, users.get(user_id, None))
-            sender_chat = types.Chat._parse(client, message, users, chats, is_chat=False) if not from_user else None
+            sender_chat = (
+                None
+                if from_user
+                else types.Chat._parse(
+                    client, message, users, chats, is_chat=False
+                )
+            )
 
             parsed_message = Message(
                 id=message.id,
@@ -688,7 +697,7 @@ class Message(Object, Update):
                         )
 
                         if raw.types.DocumentAttributeAnimated in attributes:
-                            video_attributes = attributes.get(raw.types.DocumentAttributeVideo, None)
+                            video_attributes = attributes.get(raw.types.DocumentAttributeVideo)
                             animation = types.Animation._parse(client, doc, video_attributes, file_name)
                             media_type = enums.MessageMediaType.ANIMATION
                         elif raw.types.DocumentAttributeSticker in attributes:
@@ -745,7 +754,13 @@ class Message(Object, Update):
                     reply_markup = None
 
             from_user = types.User._parse(client, users.get(user_id, None))
-            sender_chat = types.Chat._parse(client, message, users, chats, is_chat=False) if not from_user else None
+            sender_chat = (
+                None
+                if from_user
+                else types.Chat._parse(
+                    client, message, users, chats, is_chat=False
+                )
+            )
 
             reactions = types.MessageReactions._parse(client, message.reactions)
 
@@ -3051,7 +3066,7 @@ class Message(Object, Update):
             log.warning(f"Users cannot send messages with Game media type. "
                         f"chat_id: {self.chat.id}, message_id: {self.id}")
         elif self.empty:
-            log.warning(f"Empty messages cannot be copied. ")
+            log.warning("Empty messages cannot be copied. ")
         elif self.text:
             return await self._client.send_message(
                 chat_id,
@@ -3139,19 +3154,18 @@ class Message(Object, Update):
             else:
                 raise ValueError("Unknown media type")
 
-            if self.sticker or self.video_note:  # Sticker and VideoNote should have no caption
+            if self.sticker or self.video_note:
                 return await send_media(file_id=file_id)
-            else:
-                if caption is None:
-                    caption = self.caption or ""
-                    caption_entities = self.caption_entities
+            if caption is None:
+                caption = self.caption or ""
+                caption_entities = self.caption_entities
 
-                return await send_media(
-                    file_id=file_id,
-                    caption=caption,
-                    parse_mode=parse_mode,
-                    caption_entities=caption_entities
-                )
+            return await send_media(
+                file_id=file_id,
+                caption=caption,
+                parse_mode=parse_mode,
+                caption_entities=caption_entities
+            )
         else:
             raise ValueError("Can't copy this message")
 
@@ -3271,13 +3285,13 @@ class Message(Object, Update):
                     for row in keyboard
                     for button in row
                 ][x]
-            except IndexError:
-                raise ValueError(f"The button at index {x} doesn't exist")
+            except IndexError as e:
+                raise ValueError(f"The button at index {x} doesn't exist") from e
         elif isinstance(x, int) and isinstance(y, int):
             try:
                 button = keyboard[y][x]
-            except IndexError:
-                raise ValueError(f"The button at position ({x}, {y}) doesn't exist")
+            except IndexError as e:
+                raise ValueError(f"The button at position ({x}, {y}) doesn't exist") from e
         elif isinstance(x, str) and y is None:
             label = x.encode("utf-16", "surrogatepass").decode("utf-16")
 
@@ -3288,8 +3302,8 @@ class Message(Object, Update):
                     for button in row
                     if label == button.text
                 ][0]
-            except IndexError:
-                raise ValueError(f"The button with label '{x}' doesn't exists")
+            except IndexError as e:
+                raise ValueError(f"The button with label '{x}' doesn't exists") from e
         else:
             raise ValueError("Invalid arguments")
 

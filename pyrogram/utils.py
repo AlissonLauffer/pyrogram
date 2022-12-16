@@ -47,11 +47,11 @@ def get_input_media_from_file_id(
 ) -> Union["raw.types.InputMediaPhoto", "raw.types.InputMediaDocument"]:
     try:
         decoded = FileId.decode(file_id)
-    except Exception:
+    except Exception as e:
         raise ValueError(
             f'Failed to decode "{file_id}". The value does not represent an existing local file, '
             f"HTTP URL, or valid file id."
-        )
+        ) from e
 
     file_type = decoded.file_type
 
@@ -110,13 +110,7 @@ async def parse_messages(
         if messages_with_replies:
             # We need a chat id, but some messages might be empty (no chat attribute available)
             # Scan until we find a message with a chat available (there must be one, because we are fetching replies)
-            for m in parsed_messages:
-                if m.chat:
-                    chat_id = m.chat.id
-                    break
-            else:
-                chat_id = 0
-
+            chat_id = next((m.chat.id for m in parsed_messages if m.chat), 0)
             reply_messages = await client.get_messages(
                 chat_id,
                 reply_to_message_ids=messages_with_replies.keys(),
@@ -124,7 +118,7 @@ async def parse_messages(
             )
 
             for message in parsed_messages:
-                reply_id = messages_with_replies.get(message.id, None)
+                reply_id = messages_with_replies.get(message.id)
 
                 for reply in reply_messages:
                     if reply.id == reply_id:
@@ -137,20 +131,20 @@ def parse_deleted_messages(client, update) -> List["types.Message"]:
     messages = update.messages
     channel_id = getattr(update, "channel_id", None)
 
-    parsed_messages = []
-
-    for message in messages:
-        parsed_messages.append(
-            types.Message(
-                id=message,
-                chat=types.Chat(
-                    id=get_channel_id(channel_id),
-                    type=enums.ChatType.CHANNEL,
-                    client=client
-                ) if channel_id is not None else None,
-                client=client
+    parsed_messages = [
+        types.Message(
+            id=message,
+            chat=types.Chat(
+                id=get_channel_id(channel_id),
+                type=enums.ChatType.CHANNEL,
+                client=client,
             )
+            if channel_id is not None
+            else None,
+            client=client,
         )
+        for message in messages
+    ]
 
     return types.List(parsed_messages)
 
@@ -213,10 +207,7 @@ def get_raw_peer_id(peer: raw.base.Peer) -> Optional[int]:
     if isinstance(peer, raw.types.PeerChat):
         return peer.chat_id
 
-    if isinstance(peer, raw.types.PeerChannel):
-        return peer.channel_id
-
-    return None
+    return peer.channel_id if isinstance(peer, raw.types.PeerChannel) else None
 
 
 def get_peer_id(peer: raw.base.Peer) -> int:

@@ -170,8 +170,9 @@ class ChatMember(Object):
             )
 
             chat = (
-                types.Chat._parse_chat(client, chats[peer_id])
-                if not isinstance(peer, raw.types.PeerUser) else None
+                None
+                if isinstance(peer, raw.types.PeerUser)
+                else types.Chat._parse_chat(client, chats[peer_id])
             )
 
             return ChatMember(
@@ -207,8 +208,9 @@ class ChatMember(Object):
             )
 
             chat = (
-                types.Chat._parse_chat(client, chats[peer_id])
-                if not isinstance(peer, raw.types.PeerUser) else None
+                None
+                if isinstance(peer, raw.types.PeerUser)
+                else types.Chat._parse_chat(client, chats[peer_id])
             )
 
             return ChatMember(
