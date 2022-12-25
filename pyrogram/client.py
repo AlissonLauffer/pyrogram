@@ -285,6 +285,7 @@ class Client(Methods):
         self.last_update_time = datetime.now()
 
         self.loop = asyncio.get_event_loop()
+        self.listening = {}
 
     def __enter__(self):
         return self.start()
@@ -315,6 +316,38 @@ class Client(Methods):
 
             if datetime.now() - self.last_update_time > timedelta(seconds=self.UPDATES_WATCHDOG_INTERVAL):
                 await self.invoke(raw.functions.updates.GetState())
+
+    async def listen(self, chat_id, filters=None, timeout=None):
+        if type(chat_id) != int:
+            chat = await self.get_chat(chat_id)
+            chat_id = chat.id
+
+        future = self.loop.create_future()
+        future.add_done_callback(
+            functools.partial(self.clear_listener, chat_id)
+        )
+        self.listening.update({
+            chat_id: {"future": future, "filters": filters}
+        })
+        return await asyncio.wait_for(future, timeout)
+
+    async def ask(self, chat_id, text, filters=None, timeout=None, *args, **kwargs):
+        request = await self.send_message(chat_id, text, *args, **kwargs)
+        response = await self.listen(chat_id, filters, timeout)
+        response.request = request
+        return response
+
+    def clear_listener(self, chat_id, future):
+        if future == self.listening[chat_id]:
+            self.listening.pop(chat_id, None)
+
+    def cancel_listener(self, chat_id):
+        listener = self.listening.get(chat_id)
+        if not listener or listener['future'].done():
+            return
+
+        listener['future'].set_exception(ListenerCanceled())
+        self.clear_listener(chat_id, listener['future'])
 
     async def authorize(self) -> User:
         if self.bot_token:
