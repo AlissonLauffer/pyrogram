@@ -460,18 +460,22 @@ class Message(Object, Update):
         self.reactions = reactions
 
     async def wait_for_click(
-        self,
-        from_user_id: Optional[int] = None,
-        timeout: Optional[int] = None,
-        filters=None,
-        alert: Union[str, bool] = True,
+            self,
+            from_user_id: Optional[int] = None,
+            timeout: Optional[int] = None,
+            filters=None,
+            alert: Union[str, bool] = True,
     ):
+        message_id = self.id
+
         return await self._client.listen(
-            (self.chat.id, from_user_id, self.id),
             listener_type=types.ListenerTypes.CALLBACK_QUERY,
             timeout=timeout,
             filters=filters,
             unallowed_click_alert=alert,
+            chat_id=self.chat.id,
+            user_id=from_user_id,
+            message_id=message_id,
         )
 
     @staticmethod

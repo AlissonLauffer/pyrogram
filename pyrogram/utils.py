@@ -26,6 +26,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from datetime import datetime, timezone
 from getpass import getpass
 from typing import Union, List, Dict, Optional
+from types import SimpleNamespace
 
 import pyrogram
 from pyrogram import raw, enums
@@ -33,14 +34,13 @@ from pyrogram import types
 from pyrogram.file_id import FileId, FileType, PHOTO_TYPES, DOCUMENT_TYPES
 
 
-class PyromodConfig:
-    timeout_handler = None
-    stopped_handler = None
-    throw_exceptions = True
-    unallowed_click_alert = True
-    unallowed_click_alert_text = (
-        "[pyromod] You're not expected to click this button."
-    )
+PyromodConfig = SimpleNamespace(
+    timeout_handler=None,
+    stopped_handler=None,
+    throw_exceptions=True,
+    unallowed_click_alert=True,
+    unallowed_click_alert_text=("[pyromod] You're not expected to click this button."),
+)
 
 
 async def ainput(prompt: str = "", *, hide: bool = False):

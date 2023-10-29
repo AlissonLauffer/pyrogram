@@ -366,15 +366,14 @@ class Chat(Object):
             return Chat._parse_channel_chat(client, chat)
 
     def listen(self, *args, **kwargs):
-        return self._client.listen((self.id, None, None), *args, **kwargs)
+        return self._client.listen(*args, chat_id=self.id, **kwargs)
 
     def ask(self, text, *args, **kwargs):
-        return self._client.ask(text, (self.id, None, None), *args, **kwargs)
+        return self._client.ask(self.id, text, *args, **kwargs)
 
     def stop_listening(self, *args, **kwargs):
-        return self._client.stop_listening(
-            *args, identifier_pattern=(self.id, None, None), **kwargs
-        )
+        return self._client.stop_listening(*args, chat_id=self.id, **kwargs)
+
 
     async def archive(self):
         """Bound method *archive* of :obj:`~pyrogram.types.Chat`.
