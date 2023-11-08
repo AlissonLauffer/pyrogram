@@ -15,7 +15,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
-
+from asyncio import iscoroutinefunction
 from typing import Callable, Tuple
 
 import pyrogram
@@ -52,11 +52,18 @@ class CallbackQueryHandler(Handler):
 
     def __init__(self, callback: Callable, filters=None):
         self.original_callback = callback
-        super().__init__(self.resolve_future, filters)
+        super().__init__(self.resolve_future_or_callback, filters)
 
     def compose_data_identifier(self, query: CallbackQuery):
+        """
+        Composes an Identifier object from a CallbackQuery object.
+
+        :param query: The CallbackQuery object to compose of.
+        :return: An Identifier object.
+        """
         from_user = query.from_user
         from_user_id = from_user.id if from_user else None
+        from_user_username = from_user.username if from_user else None
 
         chat_id = None
         message_id = None
@@ -67,40 +74,71 @@ class CallbackQueryHandler(Handler):
             )
 
             if query.message.chat:
-                chat_id = query.message.chat.id
+                chat_id = [query.message.chat.id, query.message.chat.username]
 
         return Identifier(
             message_id=message_id,
             chat_id=chat_id,
-            from_user_id=from_user_id,
+            from_user_id=[from_user_id, from_user_username],
             inline_message_id=query.inline_message_id,
         )
 
     async def check_if_has_matching_listener(
         self, client: "pyrogram.Client", query: CallbackQuery
     ) -> Tuple[bool, Listener]:
+        """
+        Checks if the CallbackQuery object has a matching listener.
+
+        :param client: The Client object to check with.
+        :param query: The CallbackQuery object to check with.
+        :return: A tuple of a boolean and a Listener object. The boolean indicates whether
+        the found listener has filters and its filters matches with the CallbackQuery object.
+        The Listener object is the matching listener.
+        """
         data = self.compose_data_identifier(query)
 
-        listener = client.get_matching_listener(data, ListenerTypes.CALLBACK_QUERY)
+        listener = client.get_listener_matching_with_data(
+            data, ListenerTypes.CALLBACK_QUERY
+        )
 
         listener_does_match = False
 
         if listener:
             filters = listener.filters
-            listener_does_match = (
-                await filters(client, query) if callable(filters) else True
-            )
+            if callable(filters):
+                if iscoroutinefunction(filters.__call__):
+                    listener_does_match = await filters(client, query)
+                else:
+                    listener_does_match = await client.loop.run_in_executor(
+                        None, filters, client, query
+                    )
+            else:
+                listener_does_match = True
 
         return listener_does_match, listener
 
     async def check(self, client: "pyrogram.Client", query: CallbackQuery):
+        """
+        Checks if the CallbackQuery object has a matching listener or handler.
+
+        :param client: The Client object to check with.
+        :param query: The CallbackQuery object to check with.
+        :return: A boolean indicating whether the CallbackQuery object has a matching listener or the handler
+        filter matches.
+        """
         listener_does_match, listener = await self.check_if_has_matching_listener(
             client, query
         )
 
-        handler_does_match = (
-            await self.filters(client, query) if callable(self.filters) else True
-        )
+        if callable(self.filters):
+            if iscoroutinefunction(self.filters.__call__):
+                handler_does_match = await self.filters(client, query)
+            else:
+                handler_does_match = await client.loop.run_in_executor(
+                    None, self.filters, client, query
+                )
+        else:
+            handler_does_match = True
 
         data = self.compose_data_identifier(query)
 
@@ -132,14 +170,36 @@ class CallbackQueryHandler(Handler):
         # exists but its filters doesn't match
         return listener_does_match or handler_does_match
 
-    async def resolve_future(self, client: "pyrogram.Client", query: CallbackQuery, *args):
+    async def resolve_future_or_callback(
+        self, client: "pyrogram.Client", query: CallbackQuery, *args
+    ):
+        """
+        Resolves the future or calls the callback of the listener. Will call the original handler if no listener.
+
+        :param client: The Client object to resolve or call with.
+        :param query: The CallbackQuery object to resolve or call with.
+        :param args: The arguments to call the callback with.
+        :return: None
+        """
         listener_does_match, listener = await self.check_if_has_matching_listener(
             client, query
         )
 
-        if listener and not listener.future.done():
-            listener.future.set_result(query)
+        if listener and listener_does_match:
             client.remove_listener(listener)
-            raise pyrogram.StopPropagation
+
+            if listener.future and not listener.future.done():
+                listener.future.set_result(query)
+
+                raise pyrogram.StopPropagation
+            elif listener.callback:
+                if iscoroutinefunction(listener.callback):
+                    await listener.callback(client, query, *args)
+                else:
+                    listener.callback(client, query, *args)
+
+                raise pyrogram.StopPropagation
+            else:
+                raise ValueError("Listener must have either a future or a callback")
         else:
             await self.original_callback(client, query, *args)
